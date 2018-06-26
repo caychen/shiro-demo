@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+        <property name="securityManager" ref="securityManager"/>
+        <property name="loginUrl" value="login.html"/>
+        <property name="unauthorizedUrl" value="403.html"/>
+        <property name="filterChainDefinitions">
+            <!-- shiro内置的roles过滤器是同时满足角色才行，而自定义的rolesOr是只要有一个满足即可，perms同理 -->
+            <!-- rememberMe功能只局限于user级别，不能到authc级别 -->
+            <value>
+                /index.html = anon
+                /login.html = anon
+                /formLogin = anon
+                /testRole1 = roles["admin"]
+                /testRole = roles["admin", "user"]
+                /testRolesOr = rolesOr["admin", "user"]
+                /main = user
+                /* = authc
+            </value>
+        </property>
+        <property name="filters">
+            <map>
+                <entry key="rolesOr" value-ref="rolesOrFilter"></entry>
+            </map>
+        </property>
+    </bean>
+
+    <bean id="rolesOrFilter" class="org.com.cay.shiro.filter.RolesOrFilter"></bean>
+
+    <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+        <property name="realms">
+            <array>
+                <ref bean="realm"/>
+            </array>
+        </property>
+       <!-- <property name="sessionManager" ref="sessionManager"/>-->
+        <property name="cacheManager" ref="cacheManager"/>
+        <property name="rememberMeManager" ref="rememberMeManager"/>
+    </bean>
+
+    <bean id="realm" class="org.com.cay.shiro.realm.CustomRealm">
+        <property name="credentialsMatcher" ref="hashedCredentialsMatcher"/>
+    </bean>
+
+    <bean id="hashedCredentialsMatcher" class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+        <property name="hashAlgorithmName" value="md5"/>
+        <property name="hashIterations" value="5"/>
+    </bean>
+
+    <!-- 开启shiro注解 -->
+    <!-- start -->
+    <bean class="org.apache.shiro.spring.LifecycleBeanPostProcessor"></bean>
+    <bean id="advisor" class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+        <property name="securityManager" ref="securityManager"/>
+    </bean>
+    <!-- end -->
+
+   <!-- <bean class="org.com.cay.shiro.session.RedisSessionDao" id="sessionDAO"/>
+
+    &lt;!&ndash;<bean class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager" id="sessionManager">&ndash;&gt;
+    <bean class="org.com.cay.shiro.session.manager.CustomSessionManager" id="sessionManager">
+        &lt;!&ndash; 默认为MemorySessionDAO &ndash;&gt;
+        <property name="sessionDAO" ref="sessionDAO"/>
+    </bean>-->
+
+    <!-- cache manager-->
+    <bean class="org.com.cay.shiro.cache.RedisCacheManager" id="cacheManager"/>
+
+    <!-- rememberme manager -->
+    <!--内部默认有个Cookie对象，为SimpleCookie类，maxAge为一年-->
+    <bean class="org.apache.shiro.web.mgt.CookieRememberMeManager" id="rememberMeManager"/>
+</beans>
